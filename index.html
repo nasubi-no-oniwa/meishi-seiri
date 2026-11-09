@@ -89,6 +89,9 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family
 .card button{display:block;width:100%;margin-top:9px;padding:13px;border:none;border-radius:12px;font-size:17px;font-weight:800;font-family:inherit;background:var(--accent);color:#fff;cursor:pointer}
 .card button.sub{background:#ece7da;color:var(--ink);font-size:15px}
 .card button.x{background:#000;color:#fff}
+.card button.vid{background:#d8352a;color:#fff}
+#vidPrev{width:100%;max-height:46vh;border-radius:12px;background:#000;display:block;margin:6px 0}
+#recBadge{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);z-index:30;background:#1d1d1de6;color:#fff;font-weight:900;padding:16px 22px;border-radius:14px;font-size:16px}
 .card button:disabled{opacity:.45}
 .card input{width:100%;font-size:16px;border-radius:10px;border:2px solid #ccc;padding:9px;font-family:inherit;margin-top:6px}
 .row{display:flex;gap:8px}.row button{flex:1}
@@ -164,10 +167,23 @@ html:not([lang="ja"]) #ogpT b{font-size:60px}
   <button class="sub" id="renameBtn" hidden></button>
   <p class="note" id="sendMsg"></p>
   <button id="againBtn"></button>
+  <button class="vid" id="vidBtn"></button>
   <button class="x" id="xBtn"></button>
   <div class="row"><button class="sub" id="rRank"></button><button class="sub" id="rTop"></button></div>
  </div>
 </div>
+
+<div class="panel" id="vidPanel" hidden>
+ <div class="card">
+  <video id="vidPrev" playsinline controls loop></video>
+  <p class="note" id="vMsg"></p>
+  <button class="x" id="vShare"></button>
+  <button id="vSave"></button>
+  <button class="x" id="vX"></button>
+  <button class="sub" id="vBack"></button>
+ </div>
+</div>
+<div id="recBadge" hidden></div>
 
 <div class="panel" id="rankPanel" hidden>
  <div class="card">
@@ -206,7 +222,7 @@ const gradeI=n=>{let i=0;while(i<GR_AT.length&&n>=GR_AT[i])i++;return i;};
 
 // ===== ことば =====
 const TX={
-ja:{hud:'名刺の整理',title:'名刺の<em>整理</em><small>MEISHI NO SEIRI</small>',
+ja:{video:'結果を動画にする',making:'動画を作っています…',vmade:'できました。「共有する」からXアプリを選ぶと、動画つきで投稿できます',shareHint:'「保存する」で動画を保存してから、Xに投稿してください',vfail:'この端末では動画を作れませんでした',vShare:'共有する（Xアプリへ）',vSave:'保存する',back:'もどる',hud:'名刺の整理',title:'名刺の<em>整理</em><small>MEISHI NO SEIRI</small>',
  how:'奥さんが帰ってくるまで<b>60秒</b>。<br>机の上の名刺を整理しろ。<br><b>会社の名刺</b>は<b>左</b>の名刺入れへ。<br><b>キャバ嬢・デリヘルの名刺</b>は<b>右</b>のシュレッダーへ。',
  how2:'見分け方：会社の名刺には名字つきの名前と役職がある。お店の名刺は下の名前だけで、LINEや料金がある。見た目にだまされるな。まちがえたら4秒止まる。パソコンは ← → キー。',
  name:'あなたの名前（12文字まで）',anon:'名無しの夫',start:'整理をはじめる',rank:'ランキング',best:'自己ベスト',none:'まだなし',mai:'枚',
@@ -223,7 +239,7 @@ ja:{hud:'名刺の整理',title:'名刺の<em>整理</em><small>MEISHI NO SEIRI<
  rename:'この名前でランキングに載せる',renamed:'名前を変えました',needname:'名前を入れてね',badname:'その名前は使えません',
  again:'もう一回',xpost:'Xに投稿',top:'タイトルへ',today:'今日',alltime:'全期間',rkNote:'整理した枚数が多い順（同じ枚数なら、まちがいが少ない順）',loading:'読み込み中…',empty:'まだ誰もいません',rankerr:'ランキングを読み込めませんでした',zenRow:'社会的地位と家庭内での地位を失った',people:'{n}人',miss:'まちがい{m}',
  ogp1:'名刺の整理',ogp2:'会社の名刺は、左。',ogp3:'夜の名刺は、右。',ogpN:'60秒で{n}枚整理した',ogpNp:'60秒で{n}枚以上整理した'},
-en:{hud:'BUSINESS CARD CLEANUP',title:'BUSINESS CARD<em> CLEANUP</em><small>名刺の整理</small>',
+en:{video:'Make a video of the result',making:'Making the video…',vmade:'Done. Tap "Share" and pick the X app to post it with the video',shareHint:'Save the video, then post it on X',vfail:'This device can\'t make videos',vShare:'Share (to the X app)',vSave:'Save',back:'Back',hud:'BUSINESS CARD CLEANUP',title:'BUSINESS CARD<em> CLEANUP</em><small>名刺の整理</small>',
  how:'Your wife gets home in <b>60 seconds</b>.<br>Clean up the business cards on your desk.<br><b>Company cards</b> go <b>left</b> into the card case.<br><b>Hostess club and escort cards</b> go <b>right</b> into the shredder.',
  how2:'How to tell: company cards have a full name and a job title. Club cards have a first name only, plus LINE or prices. Don\'t trust the looks. A mistake freezes you for 4 seconds. On PC use ← →.',
  name:'Your name (up to 12)',anon:'Nameless husband',start:'Start cleaning',rank:'Ranking',best:'Best',none:'none yet',mai:'',
@@ -240,7 +256,7 @@ en:{hud:'BUSINESS CARD CLEANUP',title:'BUSINESS CARD<em> CLEANUP</em><small>名�
  rename:'Use this name on the ranking',renamed:'Name changed',needname:'Enter a name',badname:'That name can\'t be used',
  again:'Again',xpost:'Post to X',top:'Title',today:'Today',alltime:'All time',rkNote:'Most cards first (same count: fewer mistakes first)',loading:'Loading…',empty:'No one yet',rankerr:'Could not load the ranking',zenRow:'Lost social standing and place at home',people:'{n}',miss:'{m} miss',
  ogp1:'BUSINESS CARD CLEANUP',ogp2:'Company cards: left.',ogp3:'Night cards: right.',ogpN:'Sorted {n} cards in 60s',ogpNp:'Sorted {n}+ cards in 60s'},
-zh:{hud:'名刺の整理',title:'名刺の<em>整理</em><small>整理名片</small>',
+zh:{video:'把結果做成影片',making:'影片製作中…',vmade:'完成了。點「分享」選 X 的 App，就能附影片發文',shareHint:'請先「儲存」影片，再發到 X',vfail:'這個裝置無法製作影片',vShare:'分享（到 X 的 App）',vSave:'儲存',back:'返回',hud:'名刺の整理',title:'名刺の<em>整理</em><small>整理名片</small>',
  how:'老婆<b>60秒</b>後就到家。<br>快把桌上的名片整理好。<br><b>公司的名片</b>往<b>左</b>放進名片夾。<br><b>酒店小姐・外送茶的名片</b>往<b>右</b>丟進碎紙機。',
  how2:'分辨方法：公司的名片有姓氏全名和職稱。店家的名片只有名字，還有LINE或價格。別被外表騙了。錯了會停4秒。電腦用 ← → 鍵。',
  name:'你的名字（12字以內）',anon:'無名老公',start:'開始整理',rank:'排行榜',best:'個人最佳',none:'還沒有',mai:'張',
@@ -257,7 +273,7 @@ zh:{hud:'名刺の整理',title:'名刺の<em>整理</em><small>整理名片</sm
  rename:'用這個名字上榜',renamed:'已更改名字',needname:'請輸入名字',badname:'不能使用這個名字',
  again:'再一次',xpost:'發到 X',top:'回標題',today:'今天',alltime:'全部',rkNote:'整理得多的在前（張數相同時，錯得少的在前）',loading:'讀取中…',empty:'還沒有人',rankerr:'無法讀取排行榜',zenRow:'失去了社會地位和家中地位',people:'{n}人',miss:'錯{m}',
  ogp1:'名刺の整理',ogp2:'公司名片，往左。',ogp3:'夜晚名片，往右。',ogpN:'60秒整理了{n}張',ogpNp:'60秒整理了{n}張以上'},
-ko:{hud:'名刺の整理',title:'名刺の<em>整理</em><small>명함 정리</small>',
+ko:{video:'결과를 영상으로',making:'영상을 만드는 중…',vmade:'완성! 「공유」에서 X 앱을 고르면 영상과 함께 올릴 수 있어요',shareHint:'「저장」으로 영상을 저장한 다음 X에 올려 주세요',vfail:'이 기기에서는 영상을 만들 수 없어요',vShare:'공유 (X 앱으로)',vSave:'저장',back:'돌아가기',hud:'名刺の整理',title:'名刺の<em>整理</em><small>명함 정리</small>',
  how:'아내가 돌아오기까지 <b>60초</b>.<br>책상 위 명함을 정리해라.<br><b>회사 명함</b>은 <b>왼쪽</b> 명함집으로.<br><b>캬바쿠라·출장 업소 명함</b>은 <b>오른쪽</b> 파쇄기로.',
  how2:'구별법: 회사 명함에는 성이 붙은 이름과 직함이 있다. 가게 명함은 이름만 있고 LINE이나 요금이 있다. 겉모습에 속지 마라. 틀리면 4초 멈춘다. PC는 ← → 키.',
  name:'이름 (12자까지)',anon:'이름 없는 남편',start:'정리 시작',rank:'랭킹',best:'최고 기록',none:'아직 없음',mai:'장',
@@ -316,25 +332,55 @@ let bestN=ls.get('ms_best',0),bestM=ls.get('ms_bestm',0);
 
 // ===== 名刺をつくる =====
 // 種類：C 会社 / CL 夜っぽい見た目の会社 / K キャバ嬢 / D デリヘル / KP・DP 会社っぽい見た目のお店
-function deco(th){const sym={f1:'♡',f2:'✦',f3:'★',f4:'❀',f5:'♡'}[th];if(!sym)return '';let h='';for(let i=0;i<4;i++)h+='<i class="dc" style="left:'+ri(2,88)+'%;top:'+ri(0,75)+'%;font-size:'+ri(22,46)/10+'em;transform:rotate('+ri(-30,30)+'deg)">'+sym+'</i>';return h;}
+function genDeco(th){const sym={f1:'♡',f2:'✦',f3:'★',f4:'❀',f5:'♡'}[th];const a=[];if(sym)for(let i=0;i<4;i++)a.push({sym,x:ri(2,88),y:ri(0,75),sz:ri(22,46)/10,rot:ri(-30,30)});return a;}
 function genCard(force){const L=CD[lang]||CD.ja;const r=rnd();
  let kind=force||(r<.2?'C':r<.5?'CL':r<.67?'K':r<.84?'D':r<.92?'KP':'DP');
  const co=kind==='C'||kind==='CL',plain=kind==='C'||kind==='KP'||kind==='DP';
  const th=plain?pick(['p1','p2','p3']):pick(['f1','f2','f3','f4','f5']);
  const tel=co?'03-0'+d3()+'-'+d4():'090-0'+d3()+'-'+d4();
- let h='';
- if(co){const org=kind==='CL'?L.punF.split('{x}').join(pick(L.pun)):pick(L.corp).split('{x}').join(pick(L.pre)+(lang==='en'?' ':'')+pick(L.suf));
+ // rows：[文字, 種類(ttl/nm/msg/ad), 見分けるところか, 上に寄せないか]
+ const d={kind,co,plain,th,logo:plain||co,org:'',sub:'',rows:[],deco:genDeco(th)};
+ if(co){d.org=kind==='CL'?L.punF.split('{x}').join(pick(L.pun)):pick(L.corp).split('{x}').join(pick(L.pre)+(lang==='en'?' ':'')+pick(L.suf));
   const mail=pick(['sales','info','office','contact'])+ri(1,99)+'@'+pick(['sunrise','aoba','hokuto','yamato','midori','fujimi','asahi','koyo'])+'.example';
-  h='<div class="org"><i class="logo"></i><span>'+esc(org)+'</span></div><div class="ttl cue">'+esc(pick(L.dept)+L.sp+pick(L.pos))+'</div><div class="nm cue">'+esc(L.nm(pick(L.sur),pick(L.giv)))+'</div><div class="ad">'+esc(L.addr())+'<br>TEL '+tel+'　'+mail+'</div>';}
+  d.rows=[[pick(L.dept)+L.sp+pick(L.pos),'ttl',1],[L.nm(pick(L.sur),pick(L.giv)),'nm',1],[L.addr(),'ad',0],['TEL '+tel+'　'+mail,'ad',0]];}
  else{const hi=ri(0,L.host.length-1),host=L.host[hi];
-  if(kind==='K'||kind==='KP'){const shop=pick(CLUBP)+' '+pick(CLUB);const id='LINE ID：'+IDS[hi]+'★'+ri(1,99);
-   if(kind==='K')h='<div class="org"><span>'+esc(shop)+'</span></div><div class="nm cue">'+esc(host)+'</div><div class="msg">'+esc(pick(L.hostMsg))+'</div><div class="ad cue">'+esc(id)+'</div><div class="ad">'+esc(L.hours)+'　TEL '+tel+'</div>';
-   else h='<div class="org"><i class="logo"></i><span>'+esc(shop)+'</span></div><div class="nm cue" style="margin-top:auto">'+esc(host)+'</div><div class="ad cue">'+esc(id)+'</div><div class="ad">'+esc(pick(L.hostPl))+'<br>'+esc(L.hours)+'　TEL '+tel+'</div>';}
-  else{const shop=pick(L.dShop),sub=pick(L.dSub),line=pick(L.dLine).split('{p}').join(ri(14,24));
-   if(kind==='D')h='<div class="org"><span>'+esc(shop)+'<small>'+esc(sub)+'</small></span></div><div class="nm cue">'+esc(host)+'</div><div class="ad cue">'+esc(line)+'</div><div class="ad">'+esc(L.dRes)+' '+tel+'</div>';
-   else h='<div class="org"><i class="logo"></i><span>'+esc(shop)+'<small>'+esc(sub)+'</small></span></div><div class="nm cue" style="margin-top:auto">'+esc(host)+'</div><div class="ad cue">'+esc(line)+'</div><div class="ad">'+esc(L.dRes)+' '+tel+'</div>';}}
- const el=document.createElement('div');el.className='mc '+th+' '+(plain?'pl':'fl')+' '+(co?'co':'sh');el.innerHTML=deco(th)+h;
- return {el,kind,co};}
+  if(kind==='K'||kind==='KP'){d.org=pick(CLUBP)+' '+pick(CLUB);const id='LINE ID：'+IDS[hi]+'★'+ri(1,99);
+   d.rows=kind==='K'?[[host,'nm',1],[pick(L.hostMsg),'msg',0],[id,'ad',1],[L.hours+'　TEL '+tel,'ad',0]]:[[host,'nm',1,1],[id,'ad',1],[pick(L.hostPl),'ad',0],[L.hours+'　TEL '+tel,'ad',0]];}
+  else{d.org=pick(L.dShop);d.sub=pick(L.dSub);const line=pick(L.dLine).split('{p}').join(ri(14,24));
+   d.rows=[[host,'nm',1,kind==='DP'?1:0],[line,'ad',1],[L.dRes+' '+tel,'ad',0]];}}
+ const el=document.createElement('div');el.className='mc '+th+' '+(plain?'pl':'fl')+' '+(co?'co':'sh');
+ el.innerHTML=d.deco.map(o=>'<i class="dc" style="left:'+o.x+'%;top:'+o.y+'%;font-size:'+o.sz+'em;transform:rotate('+o.rot+'deg)">'+o.sym+'</i>').join('')+
+  '<div class="org">'+(d.logo?'<i class="logo"></i>':'')+'<span>'+esc(d.org)+(d.sub?'<small>'+esc(d.sub)+'</small>':'')+'</span></div>'+
+  d.rows.map(([tx,c,cue,auto])=>'<div class="'+c+(cue?' cue':'')+'"'+(auto?' style="margin-top:auto"':'')+'>'+esc(tx)+'</div>').join('');
+ return {el,kind,co,d};}
+// 動画用：名刺を絵にする（画面の名刺と同じ見た目）
+const TH={p1:{bg:'#ffffff',ink:'#1b2a4a'},p2:{bg:'#fbfaf3',ink:'#1d1d1d'},p3:{bg:'#ffffff',ink:'#2b2b2b'},f1:{g:['#ff8fc4','#ffd6ea'],ink:'#9b1458'},f2:{r:['#2a2a2a','#0b0b0b'],ink:'#e2bf63'},f3:{g:['#4b1f78','#b45cd0'],ink:'#ffffff'},f4:{g:['#c2185b','#ff6f91'],ink:'#ffffff'},f5:{g:['#fff0f7','#ffffff'],ink:'#d0367a'}};
+const FONT_PL='"Hiragino Mincho ProN","Yu Mincho","Noto Serif CJK JP","Noto Serif JP",serif',FONT_FL='"Hiragino Maru Gothic ProN","Rounded Mplus 1c",system-ui,sans-serif';
+function rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();}
+function drawCard(g,d,cx,cy,w,rot,sc,bad,alpha,dim){const h=w*.6044,u=w/100,fs=4*u,T=TH[d.th],ff=d.plain?FONT_PL:FONT_FL,ctr=!d.plain;
+ g.save();g.translate(cx,cy);g.rotate(rot||0);g.scale(sc||1,sc||1);g.globalAlpha=alpha==null?1:alpha;
+ g.shadowColor='rgba(0,0,0,.28)';g.shadowBlur=14;g.shadowOffsetY=6;rr(g,-w/2,-h/2,w,h,1.6*u);
+ let bg=T.bg;if(T.g){bg=g.createLinearGradient(-w/2,-h/2,w/2,h/2);bg.addColorStop(0,T.g[0]);bg.addColorStop(1,T.g[1]);}else if(T.r){bg=g.createRadialGradient(-w*.2,-h*.3,0,0,0,w*.7);bg.addColorStop(0,T.r[0]);bg.addColorStop(1,T.r[1]);}
+ g.fillStyle=bg;g.fill();g.shadowColor='transparent';g.save();rr(g,-w/2,-h/2,w,h,1.6*u);g.clip();
+ if(d.th==='p1'){g.fillStyle='#2a5bd7';g.fillRect(-w/2,-h/2,2.2*u,h);}if(d.th==='p2'){g.fillStyle='#2f9a5a';g.fillRect(-w/2,h/2-2*u,w,2*u);}if(d.th==='p3'){g.fillStyle='#d33';g.fillRect(w/2-19*u,-h/2+5*u,14*u,.6*u);}
+ if(d.th==='f5'){g.strokeStyle='#e9c46a';g.lineWidth=2.4*u;rr(g,-w/2,-h/2,w,h,1.6*u);g.stroke();}
+ g.fillStyle=T.ink;g.textBaseline='alphabetic';
+ for(const o of d.deco){g.save();g.globalAlpha*=.22;g.font=(o.sz*fs)+'px '+FONT_FL;g.translate(-w/2+o.x/100*w+o.sz*fs*.4,-h/2+o.y/100*h+o.sz*fs*.5);g.rotate(o.rot*Math.PI/180);g.textAlign='center';g.fillText(o.sym,0,o.sz*fs*.35);g.restore();}
+ const maxW=w-12*u,cues=[];
+ const fit=(tx,size,wt)=>{let z=size;g.font=wt+' '+z+'px '+ff;while(g.measureText(tx).width>maxW&&z>size*.5){z*=.94;g.font=wt+' '+z+'px '+ff;}return z;};
+ // 上：社名・店名
+ {const z0=fs*(ctr?1.1:1.02);let y=-h/2+5*u+z0*.95;const lg=d.logo?z0*1.5:0;let z=fit(d.org,z0,800);const tw=g.measureText(d.org).width;
+  let x=ctr?-(tw+(lg?lg+z0*.45:0))/2:-w/2+6*u;if(lg){g.globalAlpha*=.85;g.fillStyle=d.th==='p3'?'#d33':T.ink;rr(g,x,y-z0*1.12,lg,lg,lg*.21);g.fill();g.globalAlpha/=.85;g.fillStyle=T.ink;x+=lg+z0*.45;}
+  g.textAlign='left';g.fillText(d.org,x,y);if(d.sub){const zs=z0*.62;g.font='700 '+zs+'px '+ff;g.globalAlpha*=.85;g.fillText(d.sub,ctr?-g.measureText(d.sub).width/2:x,y+zs*1.35);g.globalAlpha/=.85;}}
+ // 下からつめて書く
+ let y=h/2-4.4*u;const R2=[...d.rows].reverse();
+ for(const [tx,c,cue] of R2){const em=c==='nm'?(ctr?2.2:1.85):c==='ttl'?.84:c==='msg'?.92:.66,wt=c==='nm'?900:c==='msg'?800:400,lh=c==='nm'?1.25:c==='ad'?1.5:1.3;
+  const z=fit(tx,fs*em,wt);const tw=g.measureText(tx).width;const bx=ctr?-tw/2:-w/2+6*u;g.textAlign='left';g.globalAlpha*=c==='ad'?.92:1;g.fillText(tx,bx,y-z*.28);g.globalAlpha/=c==='ad'?.92:1;
+  if(cue)cues.push([bx-.35*z,y-z*lh-.05*z,tw+.7*z,z*lh+.1*z]);y-=z*lh+(c==='ad'?.35*z:0);}
+ g.restore();
+ if(dim){g.fillStyle='rgba(0,0,0,.07)';rr(g,-w/2,-h/2,w,h,1.6*u);g.fill();}
+ if(bad){g.strokeStyle='#e8322a';g.lineWidth=1.2*u;rr(g,-w/2,-h/2,w,h,1.6*u);g.stroke();g.lineWidth=.8*u;for(const [x,yy,ww,hh] of cues){rr(g,x,yy,ww,hh,Math.min(hh/2,1.6*u));g.stroke();}}
+ g.restore();}
 
 // ===== 音 =====
 let AC=null,master=null,NB=null;
@@ -399,7 +445,7 @@ const WIFE=new THREE.Group();const WM={skin:M(0xf3cdb0),dress:M(0xe8708f),hair:M
 WIFE.visible=false;SC.add(WIFE);
 let HP=new THREE.Vector3(),SP=new THREE.Vector3(),WP=new THREE.Vector3(0,.4,-4.6);
 let portrait=true,LK0=.55;const CAM0=new THREE.Vector3();
-function layout(){const w=innerWidth,h=innerHeight;portrait=w<h*1.05;
+function layout(fw,fh){const w=fw||innerWidth,h=fh||innerHeight;portrait=w<h*1.05;
  if(portrait){HP.set(-1.3,0,3.45);SP.set(1.3,0,3.2);CAM.fov=clamp(46+(h/w-1.6)*10,42,56);CAM.position.set(0,10.6,6.2);LK0=.55;}
  else{HP.set(-3.6,0,1.1);SP.set(3.6,0,.9);CAM.fov=36;CAM.position.set(0,9.6,6.4);LK0=.1;}
  CAM.lookAt(0,0,LK0);CAM0.copy(CAM.position);const hs=portrait?.82:1;HOLD.scale.setScalar(hs);SHR.scale.setScalar(hs);
@@ -412,7 +458,7 @@ function toScreen(x,y,z){_pv.set(x,y,z).project(CAM);return [(_pv.x*.5+.5)*inner
 function placeLabels(){const [lx,ly]=toScreen(HP.x,.6,HP.z+.95);const [rx,ry]=toScreen(SP.x,.6,SP.z+1.05);const L=$('lbL'),Rr=$('lbR');const W=innerWidth,lw=L.offsetWidth/2+6,rw=Rr.offsetWidth/2+6;L.style.left=clamp(lx,lw,W-lw)+'px';L.style.top=ly+'px';Rr.style.left=clamp(rx,rw,W-rw)+'px';Rr.style.top=ry+'px';}
 
 // ===== 画面 =====
-const PANELS=['title','result','rankPanel'];
+const PANELS=['title','result','rankPanel','vidPanel'];
 function show(id){PANELS.forEach(p=>$(p).hidden=(p!==id));}
 function big(h){const b=$('big');b.innerHTML=h;if(h){b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');}}
 function bub(h,angry){const b=$('bub');if(!h){b.hidden=true;return;}b.hidden=false;b.textContent=h;b.classList.toggle('angry',!!angry);}
@@ -422,7 +468,7 @@ function showBest(){const f=bestN?bestN+t('mai'):t('none');$('tBest').textConten
 function applyLang(){document.documentElement.lang=lang==='zh'?'zh-Hant':lang;document.title=t('hud');
  $('tTitle').innerHTML=t('title');$('tHow').innerHTML=t('how');$('tHow2').textContent=t('how2');$('nameIn').placeholder=t('name');$('nameIn').value=ls.get('ms_name','');
  $('startBtn').textContent=t('start');$('zenBtn').textContent=t('zenBtn');$('rankBtn').textContent=t('rank');$('hudTitle').textContent=t('hud');
- $('againBtn').textContent=t('again');$('xBtn').textContent=t('xpost');$('rRank').textContent=t('rank');$('rTop').textContent=t('top');$('renameBtn').textContent=t('rename');$('rName').placeholder=t('name');
+ $('againBtn').textContent=t('again');$('xBtn').textContent=$('vX').textContent=t('xpost');$('vidBtn').textContent=t('video');$('vShare').textContent=t('vShare');$('vSave').textContent=t('vSave');$('vBack').textContent=t('back');$('rRank').textContent=t('rank');$('rTop').textContent=t('top');$('renameBtn').textContent=t('rename');$('rName').placeholder=t('name');
  $('rkTitle').textContent=t('rank');$('rkNote').textContent=t('rkNote');$('tabDay').textContent=t('today');$('tabAll').textContent=t('alltime');$('rankBack').textContent=t('top');
  $('skipTag').textContent=t('skip');$('lbL').textContent=t('lbL');$('lbR').textContent=t('lbR');
  $('langs').innerHTML=LANGS.map(([k,l])=>'<button data-l="'+k+'"'+(k===lang?' class="on"':'')+'>'+l+'</button>').join('');
@@ -436,9 +482,9 @@ function clearDeck(){DECK.innerHTML='';}
 function resetWorld(){clearDeck();HCARDS.forEach(m=>m.visible=false);HOLD.visible=true;HOLD.rotation.set(0,0,0);PHOTO.visible=true;WIFE.visible=false;wifeMood(0);bub('');$('pen').hidden=true;$('penN').hidden=true;$('skipTag').hidden=true;layout();}
 function showTitle(){mode='title';mT=0;show('title');hudOn(false);big('');resetWorld();applyLang();zenReset();}
 $('startBtn').addEventListener('click',()=>{if(sbMoved)return;const n=$('nameIn').value.trim();if(n&&badName(n)){$('tBest').textContent=t('badname');return;}ls.set('ms_name',n);ac();begin();});
-function begin(){show(null);big('');resetWorld();G={ticket:takeTicket(),n:0,mF:0,mC:0,tl:DUR,pen:0,cur:null,nx:null,drag:null,cd:3.2,lastTick:4};hudOn(true);setHud();placeLabels();mode='count';mT=0;
+function begin(){show(null);big('');resetWorld();G={ticket:takeTicket(),n:0,mF:0,mC:0,tl:DUR,pen:0,cur:null,nx:null,drag:null,cd:3.2,lastTick:4,log:[]};hudOn(true);setHud();placeLabels();mode='count';mT=0;
  G.nx=genCard();G.nx.el.classList.add('nx');DECK.appendChild(G.nx.el);promote();}
-function promote(){G.cur=G.nx;G.cur.el.classList.remove('nx');G.cur.el.style.transform='';G.cur.el.animate([{transform:'translate(5px,8px) rotate(2.5deg) scale(.96)'},{transform:'none'}],{duration:110,easing:'ease-out'});
+function promote(){G.cur=G.nx;G.cur.tIn=DUR-G.tl;G.cur.el.classList.remove('nx');G.cur.el.style.transform='';G.cur.el.animate([{transform:'translate(5px,8px) rotate(2.5deg) scale(.96)'},{transform:'none'}],{duration:110,easing:'ease-out'});
  G.nx=genCard();G.nx.el.classList.add('nx');DECK.insertBefore(G.nx.el,DECK.firstChild);}
 function countUpdate(dt){G.cd-=dt;const k=Math.ceil(G.cd-.2);if(k<G.lastTick&&k>=1){G.lastTick=k;big(String(k));sTick();}
  if(G.cd<=.2&&G.lastTick>0){G.lastTick=0;big(t('go'));sGo();mode='play';mT=0;setTimeout(()=>{if(mode==='play')big('');},500);}}
@@ -457,13 +503,14 @@ let shredT=0;
 function shredFx(k){shredT=Math.max(shredT,.35*k);sShred(.3*k);const [x,y]=toScreen(SP.x,.9,SP.z+.8);for(let i=0;i<5*k;i++){const s=document.createElement('div');s.className='strip';s.style.left=(x-30+Math.random()*60)+'px';s.style.top=(y-10)+'px';document.body.appendChild(s);
   s.animate([{transform:'translateY(0)',opacity:1},{transform:'translateY('+(30+Math.random()*30)+'px) rotate('+(Math.random()*40-20)+'deg)',opacity:0}],{duration:500+Math.random()*300,delay:Math.random()*150,easing:'ease-in',fill:'forwards'}).onfinish=()=>s.remove();}}
 function commit(dir,from){if(mode!=='play'||G.pen>0||!G.cur)return;const c=G.cur;const right=(dir<0)===c.co;
- if(right){G.n++;fly(c,dir,from);promote();setHud();}
- else{G.pen=PEN;G.bad={c,dir};sBad();c.el.classList.add('bad');c.el.style.transform='';c.el.animate([{transform:from||'none'},{transform:'scale(1.08)'}],{duration:160,easing:'ease-out',fill:'forwards'});
+ c.dir=dir;c.ok=right;G.log.push(c);
+ if(right){c.tOut=DUR-G.tl;G.n++;fly(c,dir,from);promote();setHud();}
+ else{c.tBad=DUR-G.tl;G.pen=PEN;G.bad={c,dir};sBad();c.el.classList.add('bad');c.el.style.transform='';c.el.animate([{transform:from||'none'},{transform:'scale(1.08)'}],{duration:160,easing:'ease-out',fill:'forwards'});
   $('pen').hidden=false;$('pen').firstChild.textContent=t('penT');$('pen').lastChild.textContent=c.co?t('cueCo'):t('cueSh');$('penN').hidden=false;
   const r=c.el.getBoundingClientRect();$('penN').style.top=(r.bottom+4)+'px';$('penN').textContent=PEN;}}
 function endPen(){const b=G.bad;G.pen=0;G.bad=null;$('pen').hidden=true;$('penN').hidden=true;if(!b)return;
- if(b.c.co)G.mC++;else G.mF++;b.c.el.classList.remove('bad');fly(b.c,b.dir,'scale(1.08)');if(mode==='play'&&G.tl>0)promote();setHud();}
-function finish(){if(G.bad)endPen();mode='end';mT=0;G.drag=null;clearDeck();hudOn(false);big('');G.ev={};$('skipTag').hidden=false;}
+ b.c.tOut=DUR-Math.max(0,G.tl);if(b.c.co)G.mC++;else G.mF++;b.c.el.classList.remove('bad');fly(b.c,b.dir,'scale(1.08)');if(mode==='play'&&G.tl>0)promote();setHud();}
+function finish(){if(G.bad)endPen();if(G.cur&&!G.log.includes(G.cur)){G.cur.tOut=1e9;G.log.push(G.cur);}G.lastNext=G.nx;mode='end';mT=0;G.drag=null;clearDeck();hudOn(false);big('');G.ev={};$('skipTag').hidden=false;}
 // 奥さんの表情
 function wifeMood(m){WIFE.userData.brow.visible=m<0;WM.skin.color.set(m<0?0xf2a08a:0xf3cdb0);}
 function wifePose(T,angry){const u=WIFE.userData;u.a1.rotation.z=angry?2.3+Math.sin(T*30)*.15:.25;u.a1.rotation.x=0;u['a-1'].rotation.z=angry?-2.3-Math.sin(T*30)*.15:-.25;
@@ -520,7 +567,7 @@ addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;
 let resKind='run';
 function missLines(){const a=[];if(G.mF)a.push(t('foundLine',{f:G.mF}));if(G.mC)a.push(t('shredLine',{c:G.mC}));return a;}
 function showResult(kind){mode='result';mT=0;resKind=kind;show('result');hudOn(false);big('');
- $('rName').hidden=true;$('renameBtn').hidden=true;$('sendMsg').textContent='';$('sendMsg').className='note';
+ $('rName').hidden=true;$('renameBtn').hidden=true;$('sendMsg').textContent='';$('sendMsg').className='note';$('vidBtn').hidden=false;
  if(kind==='zen'){$('rHead').textContent=t('zenHead');$('rNum').innerHTML='💔';$('rMiss').className='ml';$('rMiss').textContent='';$('rGrade').textContent=t('zenRes');$('rNote').textContent=t('zenNote');$('sendMsg').textContent=zenN?t('zenCount',{n:zenN.toLocaleString()}):'';return;}
  const n=G.n;$('rHead').textContent=t('resHead');$('rNum').innerHTML=n+'<small>'+esc(t('mai'))+'</small>';
  const ml=missLines();$('rMiss').className='ml'+(ml.length?'':' ok');$('rMiss').innerHTML=ml.length?ml.map(esc).join('<br>'):esc(t('perfect'));$('rGrade').textContent=t('ttlFmt',{g:grade(n)});
@@ -534,7 +581,82 @@ function postText(){if(resKind==='zen')return t('postZen')+'\n'+t('tags');let s=
 const SHARE_MAX=80,SHARE_PLUS=[80,100,120,150,200];
 function shareURL(){const S2=GAME_URL+'s/'+(lang==='ja'?'':'en/');if(resKind==='zen')return S2+'zen.html';const n=Math.max(0,G.n|0);if(n<=SHARE_MAX)return S2+n+'.html';let m=SHARE_PLUS[0];for(const k of SHARE_PLUS)if(n>=k)m=k;return S2+m+'p.html';}
 const openX=()=>{const u='https://x.com/intent/post?text='+encodeURIComponent(postText())+'&url='+encodeURIComponent(shareURL());const w=window.open(u,'_blank');if(!w)location.href=u;};
-$('xBtn').onclick=openX;
+$('xBtn').onclick=openX;$('vX').onclick=openX;
+
+// ===== 結果の動画（最後の5秒 → 奥さんが帰ってくる → 結果）。名刺は絵にして描きなおす =====
+let vidBusy=false,vidExt='mp4';
+$('vidBtn').onclick=()=>{if(!vidBusy)makeVideo();};
+$('vBack').onclick=()=>show('result');
+function wrapT(g,str,maxW){const tk=lang==='en'?str.split(/(\s+)/):[...str];const L=[];let cur='';for(const x of tk){if(g.measureText(cur+x).width>maxW&&cur.trim()){L.push(cur.trim());cur=x.trimStart();}else cur+=x;}if(cur.trim())L.push(cur.trim());return L;}
+async function makeVideo(){vidBusy=true;const VW=540,VH=960;const vc=document.createElement('canvas');vc.width=VW;vc.height=VH;
+ if(!vc.captureStream||!window.MediaRecorder){vidDone(null);return;}
+ show(null);const keepMode=mode,zen=resKind==='zen';mode='video';$('recBadge').hidden=false;$('recBadge').textContent='● '+t('making');
+ const g=vc.getContext('2d');let VR;try{VR=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});}catch(e){mode=keepMode;vidDone(null);return;}VR.setSize(VW,VH,false);VR.setPixelRatio(1);VR.outputColorSpace=THREE.SRGBColorSpace;
+ layout(VW,VH);const VC=CAM.clone();VC.aspect=VW/VH;VC.fov=clamp(46+(VH/VW-1.6)*10,42,56);VC.updateProjectionMatrix();const C0=CAM.position.clone(),L0=LK0;VC.position.copy(C0);VC.lookAt(0,0,L0);
+ const P=new THREE.Vector3();const TS=(x,y,z)=>{P.set(x,y,z).project(VC);return [(P.x*.5+.5)*VW,(-P.y*.5+.5)*VH];};
+ ac();let dest=null;try{dest=AC.createMediaStreamDestination();master.connect(dest);}catch(e){}
+ const stream=vc.captureStream(30);if(dest)dest.stream.getAudioTracks().forEach(tr=>stream.addTrack(tr));
+ const types=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4;codecs=avc1,mp4a.40.2','video/mp4;codecs=avc3,mp4a.40.2','video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+ const mime=types.find(x=>{try{return MediaRecorder.isTypeSupported(x)}catch(e){return false}})||'';vidExt=mime.includes('mp4')?'mp4':'webm';
+ let rec;try{rec=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:4e6}:{});}catch(e){fin();vidDone(null);return;}
+ const chunks=[];rec.ondataavailable=ev2=>{if(ev2.data&&ev2.data.size)chunks.push(ev2.data);};const stopped=new Promise(r=>{rec.onstop=r;});rec.start(200);
+ const F='"Hiragino Maru Gothic ProN","Rounded Mplus 1c",system-ui,sans-serif';const txt=(s2,x,y)=>{g.strokeText(s2,x,y);g.fillText(s2,x,y);};
+ const fitF=(s2,z,wt,maxW)=>{g.font=wt+' '+z+'px '+F;while(g.measureText(s2).width>maxW&&z>12){z-=2;g.font=wt+' '+z+'px '+F;}};
+ const LOG=G.log||[],CW=VW*.84,CX=VW/2,CY=VH*.44;
+ const a0=zen?0:Math.max(0,DUR-5),D1=zen?7.0:DUR-a0,D2=zen?0:3.7,D3=2.4,TOT=D1+D2+D3;
+ // 場面の用意
+ const keepEv=G.ev;G.ev={};WIFE.visible=false;wifeMood(0);bub('');
+ if(zen){HOLD.visible=true;HOLD.position.copy(HP);HOLD.rotation.set(0,0,0);HOLD.scale.setScalar(.82);HCARDS.forEach((m,i)=>m.visible=i<14);PHOTO.visible=true;}
+ const tgt=dir=>dir<0?TS(HP.x,.7,HP.z):TS(SP.x,1.45,SP.z);
+ let T=0,last=performance.now(),lastT=a0;const strips=[];
+ function bubble(){const b=$('bub');if(b.hidden)return;const [x,y0]=TS(WIFE.position.x,WIFE.position.y+2.25,WIFE.position.z);const ang=b.classList.contains('angry');g.font='900 26px '+F;const tx=b.textContent;const L=wrapT(g,tx,VW*.7);const bw=Math.max(...L.map(l=>g.measureText(l).width))+32,bh=L.length*32+18;const y=Math.max(y0,bh+24);const sx=(ang?Math.sin(T*60)*3:0);
+  g.fillStyle=ang?'#ffe2de':'#fff';g.strokeStyle=ang?'#e8322a':'#1d1d1d';g.lineWidth=4;rr(g,x-bw/2+sx,y-bh-14,bw,bh,16);g.fill();g.stroke();g.beginPath();g.moveTo(x-9+sx,y-15);g.lineTo(x+sx,y-2);g.lineTo(x+9+sx,y-15);g.closePath();g.fill();g.stroke();
+  g.fillStyle=ang?'#b0170f':'#1d1d1d';g.textAlign='center';L.forEach((l,i)=>g.fillText(l,x+sx,y-bh-14+9+26+i*32));}
+ function hud(tt){const left=Math.max(0,DUR-tt),n=LOG.filter(c=>c.ok&&c.tOut<=tt).length,m=LOG.filter(c=>c.ok===false&&c.tOut<=tt).length;
+  g.textAlign='center';g.lineJoin='round';g.lineWidth=7;g.strokeStyle='#fff';g.fillStyle='#5a4630';g.font='900 18px '+F;txt(t('hud'),VW/2,34);
+  g.fillStyle=left<10?'#e8322a':'#1d1d1d';g.font='900 72px '+F;txt(left.toFixed(1),VW/2,106);g.fillStyle='#1d1d1d';g.font='900 24px '+F;txt(n+t('mai')+(m?'  '+t('miss',{m}):''),VW/2,142);
+  for(const [lab,dir,col] of [[t('lbL'),-1,'#2a5bd7'],[t('lbR'),1,'#c2185b']]){const [x,y]=dir<0?TS(HP.x,.6,HP.z+.95):TS(SP.x,.6,SP.z+1.05);g.font='900 21px '+F;const w2=g.measureText(lab).width+22;const xx=clamp(x,w2/2+8,VW-w2/2-8);g.fillStyle=col;rr(g,xx-w2/2,y-17,w2,34,10);g.fill();g.fillStyle='#fff';g.fillText(lab,xx,y+7);}}
+ function playFrame(tt){const i=LOG.findIndex(c=>c.tIn<=tt&&tt<c.tOut);const cur=i>=0?LOG[i]:null;const nx=i>=0?(LOG[i+1]||G.lastNext):null;
+  for(const c of LOG){if(c.tOut>lastT&&c.tOut<=tt&&c.tOut<1e8){sSwish();}const land=c.tOut+.27;if(land>lastT&&land<=tt&&c.tOut<1e8){if(c.dir<0){sIn();}else sShred(.3);}if(c.ok===false&&c.tBad>lastT&&c.tBad<=tt)sBad();}
+  hud(tt);
+  if(nx&&nx.d)drawCard(g,nx.d,CX+5,CY+8,CW,.044,.96,false,1,true);
+  let isBad=false;if(cur&&cur.d){isBad=cur.ok===false&&tt>=cur.tBad;drawCard(g,cur.d,CX,CY,CW,0,isBad?1.08:1,isBad);}
+  for(const c of LOG){if(!(c.tOut<=tt&&tt<c.tOut+.3)||!c.d)continue;const k=(tt-c.tOut)/.3,e=k*k;const [tx2,ty2]=tgt(c.dir);drawCard(g,c.d,lerp(CX,tx2,e),lerp(CY,ty2,e)-Math.sin(k*Math.PI)*40,CW,c.dir*.24*k,lerp(1,.2,e),false,c.dir>0?1-e*.85:1);}
+  if(isBad){g.textAlign='center';g.lineWidth=8;g.strokeStyle='#fff';g.fillStyle='#e8322a';g.font='900 50px '+F;txt(t('penT'),VW/2,CY-CW*.6044*.6-58);
+   g.fillStyle='#1d1d1d';fitF(cur.co?t('cueCo'):t('cueSh'),24,900,VW-30);txt(cur.co?t('cueCo'):t('cueSh'),VW/2,CY-CW*.6044*.6-18);
+   g.fillStyle='#e8322a';g.font='900 80px '+F;txt(String(Math.max(1,Math.ceil(PEN-(tt-cur.tBad)))),VW/2,CY+CW*.6044*.6+86);}
+  lastT=tt;}
+ function resultCard(k){const a=sm(k/.4);g.fillStyle='rgba(20,14,8,'+(.72*a)+')';g.fillRect(0,0,VW,VH);g.globalAlpha=a;g.textAlign='center';g.lineJoin='round';g.lineWidth=8;g.strokeStyle='#000';
+  g.fillStyle='#fff';g.font='900 30px '+F;txt(t('hud'),VW/2,VH*.24);
+  if(zen){g.font='900 120px '+F;txt('💔',VW/2,VH*.24+150);g.fillStyle='#ffd23a';g.font='900 34px '+F;const L=wrapT(g,t('zenRes'),VW-60);L.forEach((l,i)=>txt(l,VW/2,VH*.24+220+i*44));
+   g.fillStyle='#fff';g.font='700 22px '+F;wrapT(g,t('zenNote'),VW-70).forEach((l,i)=>txt(l,VW/2,VH*.24+240+L.length*44+i*32));}
+  else{g.font='900 30px '+F;txt(t('resHead'),VW/2,VH*.24+56);g.fillStyle='#9fc2ff';g.font='900 110px '+F;txt(G.n+t('mai'),VW/2,VH*.24+170);
+   g.fillStyle='#ffd23a';fitF(t('ttlFmt',{g:grade(G.n)}),40,900,VW-40);txt(t('ttlFmt',{g:grade(G.n)}),VW/2,VH*.24+232);
+   const ml=missLines();g.fillStyle=ml.length?'#ffb0a8':'#9be07a';(ml.length?ml:[t('perfect')]).forEach((l,i)=>{fitF(l,24,900,VW-40);txt(l,VW/2,VH*.24+284+i*36);});}
+  g.globalAlpha=1;}
+ await new Promise(res=>{function step(now){const dt=Math.min(.05,(now-last)/1000);last=now;T+=dt;
+   g.clearRect(0,0,VW,VH);
+   if(zen){if(T<D1){mT=T;zenUpdate(dt);}const k=sm(Math.max(0,T-2.7)/.6);VC.position.set(0,lerp(C0.y,C0.y+1.2,k),lerp(C0.z,C0.z+2.2,k));VC.lookAt(0,lerp(0,1.2,k),lerp(L0,-1.6,k));}
+   else if(T<D1){VC.position.copy(C0);VC.lookAt(0,0,L0);}
+   else if(T<D1+D2){mT=T-D1;endUpdate(dt);const k=sm(mT/.6);VC.position.set(0,lerp(C0.y,C0.y+1.2,k),lerp(C0.z,C0.z+2.2,k));VC.lookAt(0,lerp(0,1.2,k),lerp(L0,-1.6,k));}
+   if(shredT>0){shredT-=dt;SHR.position.x=SP.x+Math.sin(now*.09)*.025;}else SHR.position.x=SP.x;
+   VR.render(SC,VC);g.drawImage(VR.domElement,0,0,VW,VH);
+   if(!zen&&T<D1)playFrame(a0+T);
+   if(zen&&T>1&&T<2.6){const [sx,sy]=TS(SP.x,.4,SP.z+.9);if(Math.random()<.6)strips.push({x:sx-60+Math.random()*120,y:sy,v:120+Math.random()*120,life:0});}
+   for(const st of strips){st.life+=dt;st.y+=st.v*dt;g.globalAlpha=Math.max(0,1-st.life/.7);g.fillStyle='#fff';g.fillRect(st.x,st.y,6,30);g.globalAlpha=1;}
+   if((T>=D1||zen)&&T<D1+D2)bubble();
+   if(T>=D1+D2)resultCard(T-D1-D2);
+   g.textAlign='center';g.lineWidth=6;g.strokeStyle='#000a';g.fillStyle='#fffc';g.font='700 22px system-ui,sans-serif';txt(GAME_URL.replace('https://',''),VW/2,VH-30);
+   if(T>=TOT)res();else requestAnimationFrame(step);}requestAnimationFrame(step);});
+ rec.stop();await stopped;fin();vidDone(new Blob(chunks,{type:(mime||'video/webm').split(';')[0]}));
+ function fin(){try{if(dest)master.disconnect(dest);}catch(_){}try{VR.dispose();}catch(_){}G.ev=keepEv;bub('');$('recBadge').hidden=true;resize();mode='result';}}
+function vidDone(blob){vidBusy=false;mode='result';show('vidPanel');
+ if(!blob||!blob.size){$('vMsg').textContent=t('vfail');$('vShare').hidden=$('vSave').hidden=true;$('vidPrev').hidden=true;return;}
+ $('vidPrev').hidden=false;const url=URL.createObjectURL(blob);$('vidPrev').src=url;$('vidPrev').play().catch(()=>{});
+ const nm='meishi-seiri_'+(resKind==='zen'?'zen':G.n)+'.'+vidExt;const file=new File([blob],nm,{type:blob.type});const canShare=!!(navigator.canShare&&navigator.canShare({files:[file]}));
+ $('vShare').hidden=!canShare;$('vSave').hidden=false;$('vMsg').textContent=canShare?t('vmade'):t('shareHint');
+ $('vShare').onclick=async()=>{try{await navigator.share({files:[file],text:postText()+'\n'+shareURL()});}catch(e){}};
+ $('vSave').onclick=()=>{const a=document.createElement('a');a.href=url;a.download=nm;document.body.appendChild(a);a.click();a.remove();};}
 
 // ===== ランキング（Firebase：ft-green の meishi の下） =====
 const FB={apiKey:'AIzaSyCfCUAY7vhCFVF58tGOQzLCQsfPhp-Qi1A',databaseURL:'https://ft-green-default-rtdb.asia-southeast1.firebasedatabase.app'};
@@ -613,6 +735,7 @@ $('rankBack').onclick=()=>{if(rankFrom){show('result');}else showTitle();};
 // ===== まわす =====
 let last=performance.now();
 function loop(now){requestAnimationFrame(loop);const raw=Math.min(.5,Math.max(0,(now-last)/1000)),dt=Math.min(.05,raw);last=now;const ct=Math.min(.1,raw);mT+=(mode==='count'||mode==='play'?raw:ct);
+ if(mode==='video')return;
  if(mode==='count')countUpdate(raw);else if(mode==='play')playUpdate(raw);else if(mode==='end')endUpdate(ct);else if(mode==='zen')zenUpdate(ct);
  if(mode==='end'||mode==='zen'){const k=sm(mT/.6);CAM.position.set(0,lerp(CAM0.y,CAM0.y+1.2,k),lerp(CAM0.z,CAM0.z+2.2,k));CAM.lookAt(0,lerp(0,1.2,k),lerp(LK0,-1.6,k));}
  if(shredT>0){shredT-=dt;SHR.position.x=SP.x+Math.sin(now*.09)*.025;SHR.position.y=Math.abs(Math.sin(now*.07))*.015;}else{SHR.position.x=SP.x;SHR.position.y=0;}
@@ -632,7 +755,7 @@ if(OGP){document.body.style.width='1200px';document.body.style.height='630px';R.
 else if(ICON){R.setPixelRatio(1);R.setSize(512,512,false);CAM.aspect=1;CAM.fov=30;CAM.position.set(0,10,3);CAM.lookAt(0,0,0);CAM.updateProjectionMatrix();HOLD.visible=false;SHR.visible=false;PILE.visible=false;R.render(SC,CAM);
  lang='ja';ogpCards(400,[['C',250,215,-10],['K',262,300,8]]);window.__ready=1;}
 else{resize();showTitle();requestAnimationFrame(loop);}
-window.__MS={get mode(){return mode},get G(){return G},commit,begin,startZen,showResult,openRank,genCard,set tl(v){G.tl=v;},endScene,get cur(){return G.cur}};
+window.__MS={makeVideo,get mode(){return mode},get G(){return G},commit,begin,startZen,showResult,openRank,genCard,set tl(v){G.tl=v;},endScene,get cur(){return G.cur}};
 </script>
 </body>
 </html>
