@@ -45,5 +45,17 @@ ex('地位を失った人の数を読める',await req('GET',P+'zen',null),true)
 ex('ほかの人の始めた時刻は読めない',await req('GET',P+'runs/'+U,U2),false);
 ex('hidden に書く',await req('PUT',P+'hidden/'+U,U,true),false);
 ex('ほかのゲームの場所に書く',await req('PUT','hitsujikai/oji/'+U,U,{t:TS}),false);
+// 地位を失った人の数（カウンター）
+{const U3='user3cccccccccccccccccccc',U4='user4dddddddddddddddddddd',INC={'.sv':{increment:1}};
+ex('はじめてのシュレッダーで数を1つ増やす',await req('PATCH','meishi',U2,{['zen/'+U2]:{t:TS},zc:INC,zt:{dk:dk(),n:1}}),true);
+ex('シュレッダーなしで数だけ増やす',await req('PUT',P+'zc',U3,5),false);
+await sleep(2100);
+ex('2回目のシュレッダーで全期間の数を増やす',await req('PATCH','meishi',U2,{['zen/'+U2]:{t:TS},zc:INC}),false);
+ex('ほかの人のはじめてのシュレッダー',await req('PATCH','meishi',U3,{['zen/'+U3]:{t:TS},zc:INC,'zt/n':INC}),true);
+ex('今日の数を1にもどす',await req('PATCH','meishi',U4,{['zen/'+U4]:{t:TS},zc:INC,zt:{dk:dk(),n:1}}),false);
+ex('今日の数をちがう日で書く',await req('PATCH','meishi',U4,{['zen/'+U4]:{t:TS},zc:INC,zt:{dk:dk()-1,n:1}}),false);
+ex('今日の数を一気に増やす',await req('PATCH','meishi',U4,{['zen/'+U4]:{t:TS},zc:INC,zt:{dk:dk(),n:9}}),false);
+const c=await req('GET',P+'zc',null),z=await req('GET',P+'zt',null);ex('全期間の数を読める',c,true);ex('今日の数を読める',z,true);
+console.log('全期間',c.j,'今日',JSON.stringify(z.j));if(c.j!==2||!z.j||z.j.n!==2){fail++;console.log('NG  数が合いません');}}
 console.log(fail?('失敗 '+fail+' 件'):'すべて合格');
 if(fail)process.exit(1);
