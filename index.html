@@ -717,8 +717,7 @@ $('renameBtn').onclick=async()=>{const nm=$('rName').value.trim(),mm=$('sendMsg'
  $('renameBtn').disabled=false;};
 let zenN=0;
 async function countOf(p,since){const url=since?DB(p)+'.json?orderBy=%22t%22&startAt='+since:DB(p)+'.json?shallow=true';const r=await fetchR(url);if(!r.ok)return 0;const j=await r.json();return j?Object.keys(j).length:0;}
-async function sendZen(){if(PV){zenN=3;return;}try{const a=await fbAuth();await PUT(DB('zen/'+a.uid)+QA(a),{t:{'.sv':'timestamp'}});zenN=await countOf('zen');if(mode==='result'&&resKind==='zen')$('sendMsg').textContent=t('zenCount',{n:zenN.toLocaleString()});}catch(e){console.warn(e);}}
-async function loadBoard(board){const today=dayKey(Date.now());
+async function zenNum(daily){try{if(daily){const r=await fetchR(DB('zt')+'.json');if(!r.ok)return 0;const j=await r.json();return j&&j.dk===dayKey(Date.now())?(+j.n||0):0;}const r=await fetchR(DB('zc')+'.json');if(!r.ok)return 0;const j=await r.json();return +j||0;}catch(e){return 0;}} async function sendZen(){if(PV){zenN=3;return;}try{const a=await fbAuth();const TSV={'.sv':'timestamp'};let ok=false;try{const [c,z]=await Promise.all([fetchR(DB('zen/'+a.uid)+'.json').then(r=>r.ok?r.json():null),fetchR(DB('zt')+'.json').then(r=>r.ok?r.json():null)]);const today=dayKey(Date.now()),d0=today*86400000-32400000;const body={};body['zen/'+a.uid]={t:TSV};if(!c)body['zc']={'.sv':{increment:1}};if(!c||!(c.t>=d0)){if(z&&z.dk===today)body['zt/n']={'.sv':{increment:1}};else body['zt']={dk:today,n:1};}const r=await fetchR(FB.databaseURL+'/meishi'+QA(a),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});ok=r.ok;}catch(_){}if(!ok)await PUT(DB('zen/'+a.uid)+QA(a),{t:TSV});zenN=await zenNum(false);if(mode==='result'&&resKind==='zen')$('sendMsg').textContent=t('zenCount',{n:zenN.toLocaleString()});}catch(e){console.warn(e);}}async function loadBoard(board){const today=dayKey(Date.now());
  const url=board==='d'?DB('d/scores')+'.json?orderBy=%22ds%22&startAt='+(today*DS)+'&endAt='+(today*DS+DS-1)+'&limitToLast='+TOPN:DB('all/scores')+'.json?orderBy=%22k%22&limitToLast='+TOPN;
  const [d,h]=await Promise.all([fetch(url).then(r=>{if(!r.ok)throw 0;return r.json()}),fetch(DB('hidden')+'.json').then(r=>r.ok?r.json():null).catch(()=>null)]);
  const rows=Object.entries(d||{}).map(([id,v])=>({...v,id})).filter(r=>!(h&&h[r.id])&&typeof r.k==='number').sort((a,b)=>b.k-a.k||a.t-b.t);
@@ -733,7 +732,7 @@ async function openRank(board,fromResult){rankFrom=!!fromResult;show('rankPanel'
  const box=$('rankBox');box.innerHTML='<p>'+t('loading')+'</p>';
  if(PV){const demo=[{n:'たろう',s:41,m:0},{n:'はなこ',s:40,m:1},{n:myName(),s:40,m:1},{n:'じろう',s:40,m:2}].map((r,i)=>({...r,k:keyOf(r.s,r.m),t:i}));demo.forEach((r,i)=>{r.rk=i>0&&demo[i-1].k===r.k?demo[i-1].rk:i+1;});box.innerHTML='<table class="rank">'+zenRowH(3)+demo.map(r=>rowH(r,r.n===myName())).join('')+'</table>';return;}
  try{const since=board==='d'?(dayKey(Date.now())*86400000-32400000):0;
-  const [rows,qn]=await Promise.all([loadBoard(board),countOf('zen',since||undefined).catch(()=>0)]);const myId=(ls.get('ms_auth',null)||{}).uid;
+  const [rows,qn]=await Promise.all([loadBoard(board),zenNum(board==='d')]);const myId=(ls.get('ms_auth',null)||{}).uid;
   let h='<table class="rank">'+zenRowH(qn);h+=rows.slice(0,TOPN).map(r=>rowH(r,r.id===myId)).join('');
   if(!rows.length)h+='<tr><td></td><td colspan="2">'+t('empty')+'</td></tr>';box.innerHTML=h+'</table>';
  }catch(e){box.innerHTML='<p>'+t('rankerr')+'</p>';}}
