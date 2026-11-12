@@ -621,7 +621,11 @@ function postText(){if(resKind==='zen')return t('postZen')+'\n'+t('tags');let s=
 // 結果ごとのページ（s/枚数.html）。リンクに「〇枚整理した」の画像が出て、人が開くとゲームへ移る
 const SHARE_MAX=80,SHARE_PLUS=[80,100,120,150,200];
 function shareURL(){const S2=GAME_URL+'s/'+(lang==='ja'?'':'en/');if(resKind==='zen')return S2+'zen.html';const n=Math.max(0,G.n|0);if(n<=SHARE_MAX)return S2+n+'.html';let m=SHARE_PLUS[0];for(const k of SHARE_PLUS)if(n>=k)m=k;return S2+m+'p.html';}
-const openX=()=>{const u='https://x.com/intent/post?text='+encodeURIComponent(postText())+'&url='+encodeURIComponent(shareURL());const w=window.open(u,'_blank');if(!w)location.href=u;};
+// Xの投稿で引用するツイート（なすびのお庭の管理ページ quote/ で日本語・英語を貼りかえられる）
+let QUOTE={};fetch('https://ft-red-default-rtdb.asia-southeast1.firebasedatabase.app/xquote/g/meishi-seiri.json').then(r=>r.json()).then(d=>{if(d&&typeof d==='object')QUOTE=d;}).catch(()=>{});
+function quoteURL(){const u=(lang==='ja'?QUOTE.ja:QUOTE.en)||'';return /^https:\/\/x\.com\/[A-Za-z0-9_]{1,15}\/status\/\d{5,25}$/.test(u)?u:'';}
+function xIntent(text,url){const q=quoteURL();return 'https://x.com/intent/post?text='+encodeURIComponent(q?text+'\n'+url:text)+'&url='+encodeURIComponent(q||url);}
+const openX=()=>{const u=xIntent(postText(),shareURL());const w=window.open(u,'_blank');if(!w)location.href=u;};
 $('xBtn').onclick=openX;$('vX').onclick=openX;
 
 // ===== 結果の動画（最後の5秒 → 奥さんが帰ってくる → 結果）。名刺は絵にして描きなおす =====
@@ -696,7 +700,7 @@ function vidDone(blob){vidBusy=false;mode='result';show('vidPanel');
  $('vidPrev').hidden=false;const url=URL.createObjectURL(blob);$('vidPrev').src=url;$('vidPrev').play().catch(()=>{});
  const nm='meishi-seiri_'+(resKind==='zen'?'zen':G.n)+'.'+vidExt;const file=new File([blob],nm,{type:blob.type});const canShare=!!(navigator.canShare&&navigator.canShare({files:[file]}));
  $('vShare').hidden=!canShare;$('vSave').hidden=false;$('vMsg').textContent=canShare?t('vmade'):t('shareHint');
- $('vShare').onclick=async()=>{try{await navigator.share({files:[file],text:postText()+'\n'+shareURL()});}catch(e){}};
+ $('vShare').onclick=async()=>{try{await navigator.share({files:[file],text:postText()+'\n'+shareURL()+(quoteURL()?'\n'+quoteURL():'')});}catch(e){}};
  $('vSave').onclick=()=>{const a=document.createElement('a');a.href=url;a.download=nm;document.body.appendChild(a);a.click();a.remove();};}
 
 // ===== ランキング（Firebase：ft-green の meishi の下） =====
